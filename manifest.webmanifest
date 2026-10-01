@@ -1,0 +1,19 @@
+{
+  "name": "Portfolio Manager",
+  "short_name": "Portfolio",
+  "description": "Personal finance dashboard: budget, debt payoff and trading journal. Data stays in your browser.",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f141c",
+  "theme_color": "#4f46e5",
+  "lang": "en-GB",
+  "categories": ["finance", "productivity"],
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}

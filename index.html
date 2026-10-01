@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Portfolio Manager</title>
+<meta name="description" content="Personal finance dashboard: budget, debt payoff and trading journal. Data stays in your browser.">
+<meta name="theme-color" content="#4f46e5">
+<meta name="application-name" content="Portfolio Manager">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Portfolio">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{
+  --bg:#f4f6fb;--card:#ffffff;--card2:#f0f3f9;--text:#18202e;--muted:#667085;--border:#dde3ee;
+  --accent:#4f46e5;--accent-t:#fff;--good:#0f9d58;--bad:#d93025;--warn:#d98a00;
+  --goodbg:#e3f6ec;--badbg:#fde8e6;--warnbg:#fff3d6;--shadow:0 1px 3px rgba(16,24,40,.08);
+}
+:root[data-theme=dark]{
+  --bg:#0f141c;--card:#171e29;--card2:#1e2736;--text:#e6ebf3;--muted:#93a0b5;--border:#2a3548;
+  --accent:#818cf8;--accent-t:#0f141c;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;
+  --goodbg:#12301f;--badbg:#3a1a1a;--warnbg:#3a2e10;--shadow:none;
+}
+@media (prefers-color-scheme:dark){
+  :root[data-theme=auto]{
+    --bg:#0f141c;--card:#171e29;--card2:#1e2736;--text:#e6ebf3;--muted:#93a0b5;--border:#2a3548;
+    --accent:#818cf8;--accent-t:#0f141c;--good:#4ade80;--bad:#f87171;--warn:#fbbf24;
+    --goodbg:#12301f;--badbg:#3a1a1a;--warnbg:#3a2e10;--shadow:none;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+body{padding-top:env(safe-area-inset-top);padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
+header.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:14px 16px 6px;max-width:1100px;margin:0 auto}
+header.top h1{font-size:1.2rem;margin:0}
+header.top h1 small{display:block;font-weight:400;color:var(--muted);font-size:.78rem}
+.hbtns{display:flex;gap:8px;flex-wrap:wrap}
+nav.tabs{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border)}
+nav.tabs .in{display:flex;gap:4px;overflow-x:auto;max-width:1100px;margin:0 auto;padding:6px 12px;scrollbar-width:none}
+nav.tabs button{flex:0 0 auto;border:0;background:transparent;color:var(--muted);padding:9px 14px;border-radius:999px;font:inherit;font-weight:600;cursor:pointer;white-space:nowrap}
+nav.tabs button.active{background:var(--accent);color:var(--accent-t)}
+main{max-width:1100px;margin:0 auto;padding:14px 12px calc(60px + env(safe-area-inset-bottom))}
+.welcome{max-width:640px;margin:20px auto}
+.welcome textarea{min-height:90px;font-family:ui-monospace,monospace;font-size:.8rem}
+.grid{display:grid;gap:12px}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow);min-width:0}
+.card h2{font-size:1rem;margin:0 0 10px}
+.card h3{font-size:.9rem;margin:14px 0 6px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.kpi .lbl{color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
+.kpi .val{font-size:1.55rem;font-weight:700;margin:2px 0}
+.kpi .sub{color:var(--muted);font-size:.82rem}
+.pos{color:var(--good)}.neg{color:var(--bad)}.warnc{color:var(--warn)}.muted{color:var(--muted)}
+.bar{height:12px;background:var(--card2);border-radius:99px;overflow:hidden;border:1px solid var(--border)}
+.bar>i{display:block;height:100%;background:var(--good);border-radius:99px;transition:width .3s}
+.bar.over>i{background:var(--bad)}.bar.mid>i{background:var(--warn)}
+.alert{padding:10px 12px;border-radius:10px;margin:8px 0;font-size:.9rem;border:1px solid transparent}
+.alert.bad{background:var(--badbg);border-color:var(--bad)}
+.alert.warn{background:var(--warnbg);border-color:var(--warn)}
+.alert.good{background:var(--goodbg);border-color:var(--good)}
+.alert.info{background:var(--card2);border-color:var(--border)}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.74rem;font-weight:600;background:var(--warnbg);color:var(--warn);border:1px solid var(--warn)}
+.badge.good{background:var(--goodbg);color:var(--good);border-color:var(--good)}
+.badge.bad{background:var(--badbg);color:var(--bad);border-color:var(--bad)}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th,td{padding:7px 8px;text-align:left;border-bottom:1px solid var(--border);vertical-align:middle}
+th{color:var(--muted);font-weight:600;font-size:.74rem;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tfoot td{font-weight:700;border-top:2px solid var(--border)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+input,select,textarea,button{font:inherit;color:inherit}
+input[type=text],input[type=number],input[type=date],select{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px 9px;min-width:0;max-width:100%}
+td input[type=number]{width:96px;text-align:right}
+td input[type=text]{width:100%;min-width:90px}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.btn{background:var(--accent);color:var(--accent-t);border:0;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
+.btn.sec{background:var(--card2);color:var(--text);border:1px solid var(--border)}
+.btn.danger{background:var(--badbg);color:var(--bad);border:1px solid var(--bad)}
+.btn.sm{padding:4px 9px;font-size:.8rem}
+.btn:active{transform:translateY(1px)}
+.form{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin:8px 0}
+.form label{display:flex;flex-direction:column;font-size:.74rem;color:var(--muted);gap:3px}
+.form input[type=number]{width:110px}
+.form input.wide{width:200px}
+.rowline{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--border)}
+.rowline:last-child{border-bottom:0}
+.check{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--border)}
+.check:last-child{border-bottom:0}
+.check input{width:20px;height:20px;margin-top:2px;accent-color:var(--accent)}
+.check.done span{text-decoration:line-through;color:var(--muted)}
+.risk{border:2px solid var(--warn);background:var(--warnbg)}
+.risk h2{color:var(--warn)}
+svg.chart{width:100%;height:auto;display:block}
+svg.chart text{fill:var(--muted);font-size:11px}
+.legend{display:flex;gap:14px;font-size:.8rem;color:var(--muted);margin-top:4px}
+.legend b{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:50;max-width:90vw;box-shadow:0 4px 14px rgba(0,0,0,.3)}
+.jentry{border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:8px 0;background:var(--card2)}
+.jhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.jmeta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.84rem;color:var(--muted);margin:4px 0}
+.jtxt{font-size:.88rem;margin:3px 0;white-space:pre-wrap;word-break:break-word}
+.jtxt b{color:var(--muted);font-weight:600}
+.thumb{max-width:130px;max-height:96px;border-radius:8px;border:1px solid var(--border);cursor:zoom-in;margin-top:6px;display:block}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;z-index:60;cursor:zoom-out}
+.overlay img{max-width:95vw;max-height:95vh;border-radius:8px}
+textarea{background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px 9px;width:100%;min-height:60px;resize:vertical;font:inherit;color:inherit}
+.form label.full{flex:1 1 100%}
+.form label.half{flex:1 1 240px}
+.form select{min-width:90px}
+.tabpane{display:none}.tabpane.active{display:block}
+.sticky1 th:first-child,.sticky1 td:first-child{position:sticky;left:0;background:var(--card);z-index:1}
+.small{font-size:.82rem}
+.mt{margin-top:12px}
+@media (max-width:600px){
+  th,td{padding:6px 5px}
+  .kpi .val{font-size:1.3rem}
+  td input[type=number]{width:80px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Personal Finance Dashboard<small>GBP · Budget · Debts · Vantage trading · stored in this browser only</small></h1>
+  <div class="hbtns">
+    <button class="btn sec sm" data-action="export">⬇ Export JSON</button>
+    <button class="btn sec sm" data-action="import">⬆ Import JSON</button>
+  </div>
+</header>
+<nav class="tabs"><div class="in" id="tabs"></div></nav>
+<main id="main"></main>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+<input type="file" id="shotFile" accept="image/*" hidden>
+<input type="file" id="csvFile" accept=".csv,.txt,text/csv" hidden>
+<div id="toastBox"></div>
+
+<script>
+(function(){
+'use strict';
+var KEY='ukFinanceDash.v1';
+var TABS=[['overview','Overview'],['budget','Budget'],['debts','Debts'],['trading','Trading (Vantage)'],['journal','Journal'],['settings','Settings']];
+
+/* ---------- helpers ---------- */
+function uid(){return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-3);}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function num(v){var n=typeof v==='number'?v:parseFloat(v);return isFinite(n)?n:0;}
+function r2(n){return Math.round((n+Number.EPSILON)*100)/100;}
+function money(n,signed){
+  n=num(n);var neg=n<0&&Math.abs(n)>=0.005;var s='£'+Math.abs(n).toLocaleString('en-GB',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return neg?'-'+s:(signed&&n>=0.005?'+'+s:s);
+}
+function pct(n,d){return (n==null||!isFinite(n))?'–':n.toFixed(d==null?1:d)+'%';}
+function pad(n){return n<10?'0'+n:''+n;}
+function ymd(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function todayStr(){return ymd(new Date());}
+function monthKey(s){return String(s).slice(0,7);}
+var MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDate(s){var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s||'');return m?(+m[3])+' '+MON[+m[2]-1]+' '+m[1]:esc(s||'');}
+function monthLabel(k){var m=/^(\d{4})-(\d{2})/.exec(k);return m?MON[+m[2]-1]+' '+m[1]:k;}
+function addMonths(k,n){var y=+k.slice(0,4),m=+k.slice(5,7)-1+n;y+=Math.floor(m/12);m=((m%12)+12)%12;return y+'-'+pad(m+1);}
+function parseYMD(s){var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(s);return m?new Date(+m[1],+m[2]-1,+m[3]):new Date(NaN);}
+function weekStart(d){var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());var wd=(x.getDay()+6)%7;x.setDate(x.getDate()-wd);return x;}
+function addDays(d,n){var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()+n);return x;}
+function cls(n){return n>0.004?'pos':(n<-0.004?'neg':'');}
+function toast(msg){
+  var el=document.createElement('div');el.className='toast';el.textContent=msg;
+  document.body.appendChild(el);setTimeout(function(){el.remove();},3500);
+}
+
+/* ---------- default state ---------- */
+function defaults(){
+  return {
+    version:1,
+    settings:{income:0,debtBudget:0,allowance:0,weeklyAllowance:0,paydayDay:28,theme:'auto'},
+    essentials:[
+      {id:uid(),name:'Rent',amount:0},
+      {id:uid(),name:'Bills',amount:0},
+      {id:uid(),name:'Food',amount:0},
+      {id:uid(),name:'Travel',amount:0}
+    ],
+    expenses:[],
+    debts:[],
+    payments:[],
+    trading:{
+      balance:0,riskCap:0,maxDailyLoss:0,
+      deposits:[],withdrawals:[],trades:[]
+    },
+    checklist:{},
+    weeklyReviews:{}
+  };
+}
+var state=load();
+function load(){
+  var d=defaults();
+  try{
+    var raw=localStorage.getItem(KEY);
+    if(raw){var s=JSON.parse(raw);return merge(d,s);}
+  }catch(e){console.warn('load failed',e);}
+  return d;
+}
+function merge(d,s){
+  if(!s||typeof s!=='object')return d;
+  var out=d;
+  ['settings'].forEach(function(k){if(s[k])Object.keys(s[k]).forEach(function(f){out[k][f]=s[k][f];});});
+  if(s.trading)Object.keys(s.trading).forEach(function(f){out.trading[f]=s.trading[f];});
+  ['essentials','expenses','debts','payments'].forEach(function(k){if(Array.isArray(s[k]))out[k]=s[k];});
+  ['deposits','withdrawals','trades'].forEach(function(k){if(!Array.isArray(out.trading[k]))out.trading[k]=[];});
+  if(s.checklist&&typeof s.checklist==='object')out.checklist=s.checklist;
+  if(s.weeklyReviews&&typeof s.weeklyReviews==='object'&&!Array.isArray(s.weeklyReviews))out.weeklyReviews=s.weeklyReviews;
+  out.trading.trades=out.trading.trades.filter(function(t){return t&&typeof t==='object';}).map(function(t){if(!t.id)t.id=uid();return t;});
+  return out;
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast('Could not save: '+e.message);}}
+
+/* ---------- calculations ---------- */
+function debtApr(d){
+  if(d.monthlyInterest==null||d.monthlyInterest===''||!(num(d.balance)>0))return null;
+  return num(d.monthlyInterest)*12/num(d.balance)*100;
+}
+function totalDebt(){return r2(state.debts.reduce(function(a,d){return a+Math.max(0,num(d.balance));},0));}
+function totalStart(){return r2(state.debts.reduce(function(a,d){return a+Math.max(num(d.startBalance),num(d.balance));},0));}
+
+function firstPayMonth(){
+  var now=new Date();var k=now.getFullYear()+'-'+pad(now.getMonth()+1);
+  return now.getDate()>num(state.settings.paydayDay)?addMonths(k,1):k;
+}
+function orderedDebts(debts){
+  var list=debts.filter(function(d){return num(d.balance)>0.004;});
+  return list.slice().sort(function(a,b){
+    var pa=debtApr(a),pb=debtApr(b);
+    if(pa==null&&pb==null)return 0;
+    if(pa==null)return 1;if(pb==null)return -1;
+    return pb-pa;
+  });
+}
+function simulate(debts,budget,startKey){
+  var list=debts.map(function(d){
+    var bal=Math.max(0,num(d.balance));
+    var rate=(d.monthlyInterest==null||d.monthlyInterest===''||bal<=0)?0:num(d.monthlyInterest)/bal;
+    return {id:d.id,name:d.name,bal:bal,rate:rate,min:d.min==null||d.min===''?0:num(d.min),apr:debtApr(d)};
+  }).filter(function(x){return x.bal>0.004;});
+  list.sort(function(a,b){
+    if(a.apr==null&&b.apr==null)return 0;if(a.apr==null)return 1;if(b.apr==null)return -1;return b.apr-a.apr;
+  });
+  var rows=[],totalInt=0,totalPaid=0,m=0,MAX=600;
+  var startTotal=list.reduce(function(a,x){return a+x.bal;},0);
+  while(list.some(function(x){return x.bal>0.004;})&&m<MAX){
+    m++;
+    var row={n:m,key:addMonths(startKey,m-1),interest:0,paid:0,debts:{}};
+    list.forEach(function(x){
+      var i=r2(x.bal*x.rate);x.bal=r2(x.bal+i);row.interest+=i;row.debts[x.id]={interest:i,pay:0};
+    });
+    var pool=num(budget);
+    // minimums first
+    list.forEach(function(x){
+      if(x.bal<=0.004)return;
+      var p=Math.min(x.min,x.bal);
+      if(p>0){x.bal=r2(x.bal-p);row.debts[x.id].pay+=p;pool-=p;}
+    });
+    // avalanche
+    list.forEach(function(x){
+      if(pool<=0.004||x.bal<=0.004)return;
+      var p=Math.min(pool,x.bal);
+      x.bal=r2(x.bal-p);row.debts[x.id].pay+=p;pool-=p;
+    });
+    list.forEach(function(x){row.debts[x.id].bal=x.bal;row.paid+=row.debts[x.id].pay;});
+    row.interest=r2(row.interest);row.paid=r2(row.paid);
+    row.remaining=r2(list.reduce(function(a,x){return a+x.bal;},0));
+    totalInt+=row.interest;totalPaid+=row.paid;
+    rows.push(row);
+    if(m>=2&&row.remaining>=rows[m-2].remaining-0.004&&row.paid<=0.004){break;} // no progress
+  }
+  var done=!list.some(function(x){return x.bal>0.004;});
+  return {rows:rows,order:list.map(function(x){return {id:x.id,name:x.name,apr:x.apr};}),months:done?rows.length:null,
+    done:done,totalInterest:r2(totalInt),totalPaid:r2(totalPaid),startTotal:r2(startTotal),
+    finishKey:done&&rows.length?rows[rows.length-1].key:null,
+    hasUnknown:list.some(function(x){return x.apr==null;})};
+}
+
+function expensesIn(fn){return state.expenses.filter(fn);}
+function essentialCats(){return state.essentials.map(function(e){return e.name;});}
+function allCats(){var c=essentialCats();['Spending','Other'].forEach(function(x){if(c.indexOf(x)<0)c.push(x);});return c;}
+function monthSpend(mk){
+  var by={};state.expenses.forEach(function(e){if(monthKey(e.date)===mk){by[e.cat]=r2((by[e.cat]||0)+num(e.amount));}});
+  return by;
+}
+function monthDebtPaid(mk){return r2(state.payments.filter(function(p){return monthKey(p.date)===mk;}).reduce(function(a,p){return a+num(p.amount);},0));}
+function weekInfo(offset){
+  var ws=addDays(weekStart(new Date()),-7*(offset||0));var we=addDays(ws,6);
+  var a=ymd(ws),b=ymd(we);
+  var spent=r2(state.expenses.filter(function(e){return e.cat==='Spending'&&e.date>=a&&e.date<=b;}).reduce(function(s,e){return s+num(e.amount);},0));
+  var allow=num(state.settings.weeklyAllowance);
+  return {start:a,end:b,spent:spent,allow:allow,remaining:r2(allow-spent)};
+}
+function budgetTotals(){
+  var ess=r2(state.essentials.reduce(function(a,e){return a+num(e.amount);},0));
+  var s=state.settings;
+  return {ess:ess,debt:num(s.debtBudget),allow:num(s.allowance),total:r2(ess+num(s.debtBudget)+num(s.allowance)),income:num(s.income)};
+}
+function tradingStats(){
+  var t=state.trading,tr=t.trades;
+  var pnl=r2(tr.reduce(function(a,x){return a+num(x.pnl);},0));
+  var wins=tr.filter(function(x){return num(x.pnl)>0;}).length;
+  var losses=tr.filter(function(x){return num(x.pnl)<0;}).length;
+  var best=null,worst=null;
+  tr.forEach(function(x){if(!best||num(x.pnl)>num(best.pnl))best=x;if(!worst||num(x.pnl)<num(worst.pnl))worst=x;});
+  var dep=r2(t.deposits.reduce(function(a,x){return a+num(x.amount);},0));
+  var wd=r2(t.withdrawals.reduce(function(a,x){return a+num(x.amount);},0));
+  var daily={};tr.forEach(function(x){daily[x.date]=r2((daily[x.date]||0)+num(x.pnl));});
+  var maxLoss=num(t.maxDailyLoss);
+  var breaches=[];
+  if(maxLoss>0)Object.keys(daily).sort().forEach(function(d){if(-daily[d]>maxLoss+0.004)breaches.push({date:d,pnl:daily[d]});});
+  return {pnl:pnl,count:tr.length,wins:wins,losses:losses,winRate:tr.length?wins/tr.length*100:null,best:best,worst:worst,
+    dep:dep,wd:wd,net:r2(dep-wd),calc:r2(dep-wd+pnl),daily:daily,breaches:breaches};
+}
+function riskWarnings(){
+  var t=state.trading,st=tradingStats(),debt=totalDebt(),w=[];
+  var cap=num(t.riskCap);
+  if(cap<=0){
+    if(st.dep>0)w.push(['bad','Trading capital cap is £0 (not set) but you have recorded '+money(st.dep)+' of deposits. Set a cap before depositing more.']);
+  }else if(st.net>cap+0.004){
+    w.push(['bad','Net deposited capital '+money(st.net)+' exceeds your cap of '+money(cap)+' by '+money(st.net-cap)+'.']);
+  }
+  if(debt>0&&st.dep>0){
+    w.push(['bad','You have trading deposits ('+money(st.dep)+') recorded while you still owe '+money(debt)+' in debt. Consider paying debt first.']);
+  }
+  st.breaches.forEach(function(b){
+    w.push(['bad','Max daily loss breached on '+fmtDate(b.date)+': '+money(b.pnl)+' (limit '+money(t.maxDailyLoss)+').']);
+  });
+  return w;
+}
+
+/* ---------- rendering ---------- */
+var ui={jf:{},jOpen:false,editId:null,shot:'',jAll:false,wk:0,shotView:null,tab:'overview',month:todayStr().slice(0,7),showAllTrades:false,showAllSched:false};
+var $main=document.getElementById('main');
+function applyTheme(){document.documentElement.setAttribute('data-theme',state.settings.theme||'auto');}
+
+function renderTabs(){
+  document.getElementById('tabs').innerHTML=TABS.map(function(t){
+    return '<button data-tab="'+t[0]+'" class="'+(ui.tab===t[0]?'active':'')+'" role="tab">'+t[1]+'</button>';
+  }).join('');
+}
+function isFirstRun(){try{return localStorage.getItem(KEY)===null;}catch(e){return false;}}
+function vWelcome(){
+  return '<div class="card welcome"><h2>👋 Welcome to Portfolio Manager</h2>'+
+   '<p>Everything you enter is stored <b>only in this browser on this device</b> - no account, no bank logins, nothing is sent anywhere.</p>'+
+   '<p><b>Got a backup?</b> Import your data file (JSON) to get started:</p>'+
+   '<div class="form"><button class="btn" data-action="import">⬆ Import data file</button></div>'+
+   '<p class="small muted">Or paste the JSON text here (handy on a phone):</p>'+
+   '<textarea id="pasteJson" placeholder="{ &quot;settings&quot;: ... }"></textarea>'+
+   '<div class="form"><button class="btn sec" data-action="paste-import">Import pasted JSON</button></div>'+
+   '<hr style="border:0;border-top:1px solid var(--border);margin:14px 0">'+
+   '<div class="form"><button class="btn sec" data-action="start-blank">Start with a blank dashboard</button></div>'+
+   '<p class="small muted">Tip: use <b>Export JSON</b> regularly for a backup - clearing browser data erases everything. If you install this to your home screen, import your data inside the installed app (it has its own storage on iOS).</p></div>';
+}
+function render(){
+  applyTheme();
+  if(isFirstRun()&&!ui.skipWelcome){document.getElementById('tabs').innerHTML='';$main.innerHTML=vWelcome();return;}
+  renderTabs();
+  var fn={overview:vOverview,budget:vBudget,debts:vDebts,trading:vTrading,journal:vJournal,settings:vSettings}[ui.tab];
+  $main.innerHTML=fn();
+  if(ui.tab==='trading')drawEquity();
+}
+function kpi(l,v,sub,c){return '<div class="card kpi"><div class="lbl">'+l+'</div><div class="val '+(c||'')+'">'+v+'</div><div class="sub">'+(sub||'')+'</div></div>';}
+function bar(frac,over){
+  var p=Math.max(0,Math.min(1,frac))*100;
+  return '<div class="bar '+(over?'over':(frac>0.85?'mid':''))+'"><i style="width:'+p.toFixed(1)+'%"></i></div>';
+}
+function alertBox(kind,html){return '<div class="alert '+kind+'">'+html+'</div>';}
+
+/* Overview */
+function vOverview(){
+  var bt=budgetTotals(),td=totalDebt(),st=tradingStats(),mk=todayStr().slice(0,7);
+  var sim=simulate(state.debts,state.settings.debtBudget,firstPayMonth());
+  var nw=r2(num(state.trading.balance)-td);
+  var by=monthSpend(mk);
+  var essBudget=bt.ess;
+  var spentEss=0;essentialCats().forEach(function(c){spentEss+=by[c]||0;});
+  var spentSpend=by['Spending']||0, spentOther=by['Other']||0;
+  var totalSpent=r2(Object.keys(by).reduce(function(a,k){return a+by[k];},0));
+  var plannedSpend=r2(essBudget+bt.allow);
+  var over=totalSpent>plannedSpend+0.004;
+  var wk=weekInfo(0);
+  var debtPaid=monthDebtPaid(mk);
+  var dfText=sim.done?monthLabel(sim.finishKey):(td<=0?'Debt free 🎉':'Not reached');
+  var dfSub=sim.done?(sim.months+' month'+(sim.months===1?'':'s')+' at '+money(state.settings.debtBudget)+'/mo'):(td<=0?'':'Payment too low to clear debt');
+  var h='<div class="grid g4">';
+  h+=kpi('Net worth',money(nw),'Trading '+money(state.trading.balance)+' − debt '+money(td),cls(nw));
+  h+=kpi('Total debt',money(td),state.debts.length+' accounts',td>0?'neg':'pos');
+  h+=kpi('Debt-free date',dfText,dfSub);
+  h+=kpi('Trading net P&L',money(st.pnl,true),st.count+' trades'+(st.winRate!=null?' · '+pct(st.winRate,0)+' win rate':''),cls(st.pnl));
+  h+='</div>';
+  var ws=riskWarnings();
+  if(ws.length)h+='<div class="mt">'+ws.map(function(w){return alertBox(w[0],'⚠ '+esc(w[1]));}).join('')+'</div>';
+  if(sim.hasUnknown)h+=alertBox('warn','Amex (or another debt) has an unknown interest rate - add it on the Debts tab; the payoff estimate currently assumes £0 interest on it, so it is optimistic.');
+  var unalloc=r2(bt.income-bt.total);
+  if(Math.abs(unalloc)>=0.005)h+=alertBox(unalloc<0?'bad':'info','Budget '+(unalloc<0?'over-allocates income by ':'leaves unallocated income of ')+money(Math.abs(unalloc))+'.');
+  h+='<div class="grid g2 mt">';
+  // budget status
+  h+='<div class="card"><h2>This month’s budget status <span class="muted small">'+monthLabel(mk)+'</span></h2>';
+  h+='<div class="rowline"><span>Spent (essentials + allowance + other)</span><b>'+money(totalSpent)+' / '+money(plannedSpend)+'</b></div>';
+  h+=bar(plannedSpend>0?totalSpent/plannedSpend:0,over);
+  h+='<div class="mt">'+(over?'<span class="badge bad">Over budget by '+money(totalSpent-plannedSpend)+'</span>':'<span class="badge good">On track · '+money(plannedSpend-totalSpent)+' left</span>')+'</div>';
+  h+='<div class="rowline mt"><span>Essentials</span><span>'+money(spentEss)+' / '+money(essBudget)+'</span></div>';
+  h+='<div class="rowline"><span>Spending allowance</span><span>'+money(spentSpend)+' / '+money(bt.allow)+'</span></div>';
+  if(spentOther>0)h+='<div class="rowline"><span>Other (unbudgeted)</span><span class="neg">'+money(spentOther)+'</span></div>';
+  h+='<div class="rowline"><span>Debt payments logged</span><span>'+money(debtPaid)+' / '+money(bt.debt)+'</span></div>';
+  h+='<h3>This week’s allowance</h3><div class="rowline"><span>Remaining ('+fmtDate(wk.start)+' – '+fmtDate(wk.end)+')</span><b class="'+(wk.remaining<0?'neg':'pos')+'">'+money(wk.remaining)+'</b></div>';
+  h+=bar(wk.allow>0?wk.spent/wk.allow:0,wk.remaining<0);
+  h+='</div>';
+  // checklist
+  var cl=state.checklist[mk]||{};
+  var items=[
+    ['essentials','Pay essentials ('+money(bt.ess)+': '+state.essentials.map(function(e){return esc(e.name);}).join(', ')+')'],
+    ['debt','Send debt payment first ('+money(bt.debt)+') - then log it on the Debts tab'],
+    ['allowance','Move spending allowance to spending account ('+money(bt.allow)+')']
+  ];
+  var doneN=items.filter(function(i){return cl[i[0]];}).length;
+  h+='<div class="card"><h2>Payday checklist <span class="muted small">'+monthLabel(mk)+' · payday '+ordinal(state.settings.paydayDay)+'</span></h2>';
+  items.forEach(function(i){
+    h+='<label class="check '+(cl[i[0]]?'done':'')+'"><input type="checkbox" data-check="'+i[0]+'" '+(cl[i[0]]?'checked':'')+'><span>'+i[1]+'</span></label>';
+  });
+  h+='<div class="small muted mt">'+doneN+' of '+items.length+' done'+(doneN===items.length?' ✅':'')+' · resets each month</div>';
+  // debt progress
+  var start=totalStart(),paid=Math.max(0,start-td);
+  h+='<h3>Debt paid off</h3>'+bar(start>0?paid/start:1,false)+'<div class="small muted">'+money(paid)+' of '+money(start)+' ('+pct(start>0?paid/start*100:100,0)+')</div>';
+  h+='</div></div>';
+  return h;
+}
+function ordinal(n){n=num(n);var s=['th','st','nd','rd'],v=n%100;return n+(s[(v-20)%10]||s[v]||s[0]);}
+
+/* Budget */
+function vBudget(){
+  var bt=budgetTotals(),mk=ui.month,by=monthSpend(mk),s=state.settings;
+  var h='<div class="grid g2"><div class="card"><h2>Monthly plan</h2>';
+  h+='<div class="form"><label>Monthly income (£)<input type="number" step="0.01" data-path="settings.income" value="'+esc(s.income)+'"></label></div>';
+  h+='<div class="scroll"><table><thead><tr><th>Essential</th><th class="n">Budget £</th><th></th></tr></thead><tbody>';
+  state.essentials.forEach(function(e){
+    h+='<tr><td><input type="text" data-list="essentials" data-id="'+e.id+'" data-field="name" value="'+esc(e.name)+'"></td>'+
+    '<td class="n"><input type="number" step="0.01" data-list="essentials" data-id="'+e.id+'" data-field="amount" data-type="num" value="'+esc(e.amount)+'"></td>'+
+    '<td><button class="btn danger sm" data-action="del-essential" data-id="'+e.id+'" title="Remove">✕</button></td></tr>';
+  });
+  h+='</tbody><tfoot><tr><td>Essentials total</td><td class="n">'+money(bt.ess)+'</td><td></td></tr></tfoot></table></div>';
+  h+='<div class="form"><button class="btn sec sm" data-action="add-essential">+ Add essential</button></div>';
+  h+='<div class="form"><label>Debt payment / month (£)<input type="number" step="0.01" data-path="settings.debtBudget" value="'+esc(s.debtBudget)+'"></label>'+
+     '<label>Spending allowance / month (£)<input type="number" step="0.01" data-path="settings.allowance" value="'+esc(s.allowance)+'"></label>'+
+     '<label>Weekly allowance (£)<input type="number" step="0.01" data-path="settings.weeklyAllowance" value="'+esc(s.weeklyAllowance)+'"></label></div>';
+  var un=r2(bt.income-bt.total);
+  h+='<div class="rowline"><span>Total planned (essentials + debt + allowance)</span><b>'+money(bt.total)+'</b></div>';
+  h+='<div class="rowline"><span>Unallocated income</span><b class="'+(un<0?'neg':'pos')+'">'+money(un)+'</b></div></div>';
+
+  // weekly tracker
+  var wk=weekInfo(0);
+  h+='<div class="card"><h2>Weekly allowance tracker</h2>';
+  h+='<div class="kpi"><div class="lbl">Remaining this week ('+fmtDate(wk.start)+' – '+fmtDate(wk.end)+')</div><div class="val '+(wk.remaining<0?'neg':'pos')+'">'+money(wk.remaining)+'</div><div class="sub">Spent '+money(wk.spent)+' of '+money(wk.allow)+' (category “Spending”)</div></div>';
+  h+=bar(wk.allow>0?wk.spent/wk.allow:0,wk.remaining<0);
+  h+='<h3>Recent weeks</h3><table><thead><tr><th>Week starting</th><th class="n">Spent</th><th class="n">Left</th></tr></thead><tbody>';
+  for(var i=0;i<5;i++){var w=weekInfo(i);h+='<tr><td>'+fmtDate(w.start)+(i===0?' <span class="badge">now</span>':'')+'</td><td class="n">'+money(w.spent)+'</td><td class="n '+(w.remaining<0?'neg':'pos')+'">'+money(w.remaining)+'</td></tr>';}
+  h+='</tbody></table></div></div>';
+
+  // budget vs actual
+  h+='<div class="card mt"><h2>Budget vs actual</h2>';
+  h+='<div class="form"><label>Month<input type="month" data-ui="month" value="'+mk+'" style="background:var(--card2);border:1px solid var(--border);border-radius:8px;padding:7px 9px"></label></div>';
+  h+='<div class="scroll"><table><thead><tr><th>Category</th><th class="n">Budget</th><th class="n">Actual</th><th class="n">Left</th><th style="min-width:110px"></th></tr></thead><tbody>';
+  var tb=0,ta=0;
+  function line(name,b,a){
+    tb+=b;ta+=a;var left=r2(b-a);
+    h+='<tr><td>'+esc(name)+'</td><td class="n">'+money(b)+'</td><td class="n">'+money(a)+'</td><td class="n '+(left<0?'neg':'pos')+'">'+money(left)+'</td><td>'+bar(b>0?a/b:(a>0?1:0),left<0)+'</td></tr>';
+  }
+  state.essentials.forEach(function(e){line(e.name,num(e.amount),by[e.name]||0);});
+  line('Spending allowance',bt.allow,by['Spending']||0);
+  line('Debt payment',bt.debt,monthDebtPaid(mk));
+  var oth=by['Other']||0;
+  if(oth>0)line('Other (unbudgeted)',0,oth);
+  h+='</tbody><tfoot><tr><td>Total</td><td class="n">'+money(tb)+'</td><td class="n">'+money(ta)+'</td><td class="n '+(tb-ta<0?'neg':'pos')+'">'+money(tb-ta)+'</td><td></td></tr></tfoot></table></div>';
+  h+='<div class="small muted">Debt payment “actual” comes from payments logged on the Debts tab.</div></div>';
+
+  // expense log
+  h+='<div class="card mt"><h2>Expense log</h2>';
+  h+='<form class="form" data-form="expense"><label>Date<input type="date" name="date" value="'+todayStr()+'" required></label>'+
+     '<label>Category<select name="cat">'+allCats().map(function(c){return '<option'+(c==='Spending'?' selected':'')+'>'+esc(c)+'</option>';}).join('')+'</select></label>'+
+     '<label>Amount (£)<input type="number" name="amount" step="0.01" min="0" required></label>'+
+     '<label>Note<input type="text" class="wide" name="note" placeholder="optional"></label>'+
+     '<button class="btn">Add</button></form>';
+  var ex=state.expenses.slice().sort(function(a,b){return a.date<b.date?1:(a.date>b.date?-1:0);}).slice(0,100);
+  if(!ex.length)h+='<div class="muted">No expenses logged yet.</div>';
+  else{
+    h+='<div class="scroll"><table><thead><tr><th>Date</th><th>Category</th><th class="n">Amount</th><th>Note</th><th></th></tr></thead><tbody>';
+    ex.forEach(function(e){h+='<tr><td>'+fmtDate(e.date)+'</td><td>'+esc(e.cat)+'</td><td class="n">'+money(e.amount)+'</td><td>'+esc(e.note)+'</td><td><button class="btn danger sm" data-action="del-expense" data-id="'+e.id+'">✕</button></td></tr>';});
+    h+='</tbody></table></div>';
+    if(state.expenses.length>100)h+='<div class="small muted">Showing latest 100 of '+state.expenses.length+'.</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+/* Debts */
+function vDebts(){
+  var td=totalDebt(),s=state.settings,mk=todayStr().slice(0,7);
+  var sim=simulate(state.debts,s.debtBudget,firstPayMonth());
+  var start=totalStart(),paid=Math.max(0,start-td);
+  var h='<div class="grid g4">';
+  h+=kpi('Total debt',money(td),'',td>0?'neg':'pos');
+  h+=kpi('Debt-free',sim.done?monthLabel(sim.finishKey):(td<=0?'Done 🎉':'Never'),sim.done?sim.months+' months':'Increase payment budget');
+  h+=kpi('Total interest (est.)',money(sim.totalInterest),'over the plan');
+  h+=kpi('Paid off so far',money(paid),pct(start>0?paid/start*100:100,0)+' of '+money(start),'pos');
+  h+='</div>';
+  h+='<div class="card mt"><h2>Progress</h2>'+bar(start>0?paid/start:1,false)+'<div class="small muted mt">'+money(paid)+' paid off · '+money(td)+' remaining</div></div>';
+
+  h+='<div class="card mt"><h2>Debts</h2><div class="scroll"><table><thead><tr><th>Name</th><th class="n">Balance £</th><th class="n">Interest £/mo</th><th class="n">Est. APR</th><th class="n">Min pay £</th><th class="n">Started £</th><th></th></tr></thead><tbody>';
+  state.debts.forEach(function(d){
+    var apr=debtApr(d);var unk=(d.monthlyInterest==null||d.monthlyInterest==='');
+    h+='<tr><td><input type="text" data-list="debts" data-id="'+d.id+'" data-field="name" value="'+esc(d.name)+'">'+
+      '<input type="text" class="small" style="margin-top:4px" placeholder="note" data-list="debts" data-id="'+d.id+'" data-field="note" value="'+esc(d.note)+'"></td>'+
+      '<td class="n"><input type="number" step="0.01" data-list="debts" data-id="'+d.id+'" data-field="balance" data-type="num" value="'+esc(d.balance)+'"></td>'+
+      '<td class="n"><input type="number" step="0.01" placeholder="unknown" data-list="debts" data-id="'+d.id+'" data-field="monthlyInterest" data-type="null" value="'+(unk?'':esc(d.monthlyInterest))+'"></td>'+
+      '<td class="n">'+(unk?'<span class="badge">rate unknown - add when available</span>':(apr==null?'–':pct(apr,1)))+'</td>'+
+      '<td class="n"><input type="number" step="0.01" placeholder="blank" data-list="debts" data-id="'+d.id+'" data-field="min" data-type="null" value="'+(d.min==null?'':esc(d.min))+'"></td>'+
+      '<td class="n"><input type="number" step="0.01" data-list="debts" data-id="'+d.id+'" data-field="startBalance" data-type="num" value="'+esc(d.startBalance)+'"></td>'+
+      '<td><button class="btn danger sm" data-action="del-debt" data-id="'+d.id+'">✕</button></td></tr>';
+  });
+  h+='</tbody><tfoot><tr><td>Total</td><td class="n">'+money(td)+'</td><td class="n">'+money(state.debts.reduce(function(a,d){return a+num(d.monthlyInterest);},0))+'</td><td></td><td></td><td class="n">'+money(start)+'</td><td></td></tr></tfoot></table></div>';
+  h+='<div class="form"><button class="btn sec sm" data-action="add-debt">+ Add debt</button></div>';
+  h+='<div class="small muted">Est. APR = monthly interest × 12 ÷ balance. Leave interest blank if unknown (placed last in the avalanche order and assumed £0 interest until filled in). “Started” is the original balance, used for the progress bar.</div></div>';
+
+  // planner
+  h+='<div class="card mt"><h2>Payoff planner (avalanche)</h2>';
+  h+='<div class="form"><label>Monthly debt payment budget (£)<input type="number" step="0.01" data-path="settings.debtBudget" value="'+esc(s.debtBudget)+'"></label></div>';
+  if(sim.hasUnknown)h+=alertBox('warn','One or more debts have an unknown rate (e.g. Amex) - add it when available. Until then the estimate assumes no interest on them.');
+  var mins=state.debts.reduce(function(a,d){return a+(d.min==null||d.min===''?0:num(d.min));},0);
+  if(mins>num(s.debtBudget)+0.004)h+=alertBox('warn','Minimum payments ('+money(mins)+') exceed your budget; the schedule pays all minimums anyway.');
+  if(!sim.order.length)h+=alertBox('good','No outstanding debt 🎉');
+  else{
+    h+='<div class="small"><b>Payoff order:</b> '+sim.order.map(function(o,i){return (i+1)+'. '+esc(o.name)+' ('+(o.apr==null?'rate unknown':pct(o.apr,0))+')';}).join(' → ')+'</div>';
+    if(sim.done){
+      h+=alertBox('good','Debt-free in <b>'+sim.months+' months</b> - by <b>'+monthLabel(sim.finishKey)+'</b>. Total interest ≈ <b>'+money(sim.totalInterest)+'</b>; total repaid ≈ '+money(sim.totalPaid)+'.');
+    }else h+=alertBox('bad','At this payment the debts are not cleared within 50 years - increase the monthly budget or fill in minimums.');
+    h+='<h3>Month-by-month schedule</h3><div class="scroll"><table class="sticky1"><thead><tr><th>Month</th><th class="n">Paid</th><th class="n">Interest</th>';
+    sim.order.forEach(function(o){h+='<th class="n">'+esc(o.name)+'</th>';});
+    h+='<th class="n">Total left</th></tr></thead><tbody>';
+    var rows=sim.rows,lim=ui.showAllSched?rows.length:Math.min(rows.length,36);
+    for(var i=0;i<lim;i++){
+      var r=rows[i];h+='<tr><td>'+r.n+'. '+monthLabel(r.key)+'</td><td class="n">'+money(r.paid)+'</td><td class="n">'+money(r.interest)+'</td>';
+      sim.order.forEach(function(o){var c=r.debts[o.id];h+='<td class="n">'+(c.bal<0.005?'<span class="pos">✓ 0</span>':money(c.bal))+'</td>';});
+      h+='<td class="n"><b>'+money(r.remaining)+'</b></td></tr>';
+    }
+    h+='</tbody></table></div>';
+    if(rows.length>lim)h+='<div class="form"><button class="btn sec sm" data-action="show-sched">Show all '+rows.length+' months</button></div>';
+  }
+  h+='</div>';
+
+  // payments
+  h+='<div class="card mt"><h2>Log a payment</h2>';
+  h+='<form class="form" data-form="payment"><label>Date<input type="date" name="date" value="'+todayStr()+'" required></label>'+
+    '<label>Debt<select name="debt">'+state.debts.map(function(d){return '<option value="'+d.id+'">'+esc(d.name)+' ('+money(d.balance)+')</option>';}).join('')+'</select></label>'+
+    '<label>Amount (£)<input type="number" name="amount" step="0.01" min="0.01" required></label>'+
+    '<label>Note<input type="text" class="wide" name="note" placeholder="optional"></label><button class="btn">Log payment</button></form>';
+  h+='<div class="small muted">Logging a payment reduces that debt’s balance immediately; deleting it restores the balance. This month paid: <b>'+money(monthDebtPaid(mk))+'</b> of '+money(s.debtBudget)+'.</div>';
+  var ps=state.payments.slice().sort(function(a,b){return a.date<b.date?1:-1;});
+  if(ps.length){
+    h+='<div class="scroll mt"><table><thead><tr><th>Date</th><th>Debt</th><th class="n">Amount</th><th>Note</th><th></th></tr></thead><tbody>';
+    ps.slice(0,100).forEach(function(p){h+='<tr><td>'+fmtDate(p.date)+'</td><td>'+esc(p.debtName)+'</td><td class="n">'+money(p.amount)+'</td><td>'+esc(p.note)+'</td><td><button class="btn danger sm" data-action="del-payment" data-id="'+p.id+'">✕</button></td></tr>';});
+    h+='</tbody></table></div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+/* Trading */
+function vTrading(){
+  var t=state.trading,st=tradingStats(),td=totalDebt();
+  var h='<div class="grid g4">';
+  h+=kpi('Account balance',money(t.balance),'Vantage MT5 (manual)');
+  h+=kpi('Net P&L',money(st.pnl,true),st.count+' trades',cls(st.pnl));
+  h+=kpi('Win rate',st.winRate==null?'–':pct(st.winRate,1),st.wins+' wins · '+st.losses+' losses');
+  h+=kpi('Net deposited',money(st.net),money(st.dep)+' in · '+money(st.wd)+' out');
+  h+='</div>';
+
+  // risk box
+  var ws=riskWarnings();
+  h+='<div class="card risk mt"><h2>⚠ Trading risk rule</h2>';
+  h+='<div class="small">No trading deposits while debts remain. Keep trading capital inside your cap and stop trading when the daily loss limit is hit.</div>';
+  h+='<div class="form"><label>Max trading capital cap (£)<input type="number" step="1" min="0" data-path="trading.riskCap" value="'+esc(t.riskCap)+'"></label>'+
+     '<label>Max daily loss (£)<input type="number" step="1" min="0" data-path="trading.maxDailyLoss" value="'+esc(t.maxDailyLoss)+'"></label></div>';
+  if(num(t.riskCap)<=0)h+=alertBox('info','Cap is £0 - i.e. no trading capital allowed until you set one.');
+  if(num(t.maxDailyLoss)<=0)h+=alertBox('info','Max daily loss not set (£0 = off). Set it to get daily-loss warnings.');
+  if(td>0)h+=alertBox('warn','You still owe '+money(td)+'. Making trading deposits now breaks your rule.');
+  ws.forEach(function(w){h+=alertBox('bad','⚠ '+esc(w[1]));});
+  if(!ws.length&&td<=0)h+=alertBox('good','No rule breaches.');
+  h+='</div>';
+
+  h+='<div class="grid g2 mt"><div class="card"><h2>Account</h2>';
+  h+='<div class="form"><label>Current account balance (£)<input type="number" step="0.01" data-path="trading.balance" value="'+esc(t.balance)+'"></label>'+
+     '<button class="btn sec sm" data-action="use-calc">Use calculated ('+money(st.calc)+')</button></div>';
+  h+='<div class="small muted">Calculated = deposits − withdrawals + net P&L. Net worth on the Overview uses the balance entered here.</div>';
+  h+='<h3>Performance</h3>';
+  h+='<div class="rowline"><span>Net P&L</span><b class="'+cls(st.pnl)+'">'+money(st.pnl,true)+'</b></div>';
+  h+='<div class="rowline"><span>Win rate</span><b>'+(st.winRate==null?'–':pct(st.winRate,1))+'</b></div>';
+  h+='<div class="rowline"><span>Best trade</span><b class="pos">'+(st.best?money(st.best.pnl,true)+' <span class="muted small">'+esc(st.best.instrument)+' '+fmtDate(st.best.date)+'</span>':'–')+'</b></div>';
+  h+='<div class="rowline"><span>Worst trade</span><b class="neg">'+(st.worst?money(st.worst.pnl,true)+' <span class="muted small">'+esc(st.worst.instrument)+' '+fmtDate(st.worst.date)+'</span>':'–')+'</b></div>';
+  h+='</div>';
+  h+='<div class="card"><h2>Deposits vs withdrawals</h2>';
+  var mx=Math.max(st.dep,st.wd,1);
+  h+='<div class="rowline"><span>Deposits</span><b>'+money(st.dep)+'</b></div>'+bar(st.dep/mx,false);
+  h+='<div class="rowline mt"><span>Withdrawals</span><b>'+money(st.wd)+'</b></div>'+bar(st.wd/mx,false);
+  h+='<div class="rowline mt"><span>Net deposited</span><b>'+money(st.net)+'</b></div>';
+  h+='<form class="form" data-form="cash"><label>Type<select name="kind"><option value="deposits">Deposit</option><option value="withdrawals">Withdrawal</option></select></label>'+
+     '<label>Date<input type="date" name="date" value="'+todayStr()+'" required></label>'+
+     '<label>Amount (£)<input type="number" name="amount" step="0.01" min="0.01" required></label>'+
+     '<label>Note<input type="text" name="note" class="wide" placeholder="optional"></label><button class="btn">Add</button></form>';
+  var cf=t.deposits.map(function(x){return {k:'deposits',x:x};}).concat(t.withdrawals.map(function(x){return {k:'withdrawals',x:x};}));
+  cf.sort(function(a,b){return a.x.date<b.x.date?1:-1;});
+  if(cf.length){
+    h+='<div class="scroll"><table><thead><tr><th>Date</th><th>Type</th><th class="n">Amount</th><th>Note</th><th></th></tr></thead><tbody>';
+    cf.slice(0,50).forEach(function(c){h+='<tr><td>'+fmtDate(c.x.date)+'</td><td>'+(c.k==='deposits'?'Deposit':'Withdrawal')+'</td><td class="n">'+money(c.x.amount)+'</td><td>'+esc(c.x.note)+'</td><td><button class="btn danger sm" data-action="del-cash" data-kind="'+c.k+'" data-id="'+c.x.id+'">✕</button></td></tr>';});
+    h+='</tbody></table></div>';
+  }
+  h+='</div></div>';
+
+  h+='<div class="card mt"><h2>Equity curve</h2><div id="equity"></div><div class="legend"><span><b style="background:var(--accent)"></b>Equity (deposits − withdrawals + P&L)</span><span><b style="background:var(--good)"></b>Cumulative P&L</span></div></div>';
+
+  h+='<div class="card mt"><h2>Trade / P&L log</h2>';
+  h+='<div class="small muted">Trades here and entries in the <b>Journal</b> tab are the <b>same records</b> - log a trade once (quick add below or full journal entry) and it feeds P&L, win rate and the equity curve everywhere.</div>';
+  h+='<form class="form" data-form="trade"><label>Date<input type="date" name="date" value="'+todayStr()+'" required></label>'+
+     '<label>Instrument<input type="text" name="instrument" placeholder="e.g. GBPUSD" required style="width:120px"></label>'+
+     '<label>P&L (£)<input type="number" name="pnl" step="0.01" required></label>'+
+     '<label>Note<input type="text" name="note" class="wide" placeholder="optional"></label><button class="btn">Add trade</button><button type="button" class="btn sec" data-action="j-new">📓 Full journal entry</button></form>';
+  h+='<div class="form"><button class="btn sec sm" data-action="csv">📄 Import MT5 CSV</button><label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="csvFees" checked> include commission &amp; swap</label>'+
+     '<span class="small muted">Best-effort: detects Time/Date, Symbol and Profit columns (comma/semicolon/tab). Duplicates are skipped.</span></div>';
+  var tr=t.trades.slice().sort(function(a,b){var ka=tkey(a),kb=tkey(b);return ka<kb?1:(ka>kb?-1:0);});
+  var lim=ui.showAllTrades?tr.length:Math.min(tr.length,50);
+  if(!tr.length)h+='<div class="muted">No trades logged yet.</div>';
+  else{
+    h+='<div class="scroll"><table><thead><tr><th>Date</th><th>Instrument</th><th class="n">P&L</th><th>Note</th><th></th></tr></thead><tbody>';
+    for(var i=0;i<lim;i++){var x=tr[i];h+='<tr><td>'+fmtDate(x.date)+(x.time?' <span class="muted small">'+esc(x.time)+'</span>':'')+'</td><td>'+esc(x.instrument)+(x.dir?' <span class="badge '+(x.dir==='long'?'good':'bad')+'">'+x.dir+'</span>':'')+(x.setup?' <span class="muted small">'+esc(x.setup)+'</span>':'')+'</td><td class="n '+cls(num(x.pnl))+'">'+money(x.pnl,true)+'</td><td>'+esc(x.note)+'</td><td style="white-space:nowrap"><button class="btn sec sm" data-action="j-edit" data-id="'+x.id+'" title="Edit in Journal">✎</button> <button class="btn danger sm" data-action="del-trade" data-id="'+x.id+'">✕</button></td></tr>';}
+    h+='</tbody></table></div>';
+    if(tr.length>lim)h+='<div class="form"><button class="btn sec sm" data-action="show-trades">Show all '+tr.length+' trades</button></div>';
+    h+='<div class="form"><button class="btn danger sm" data-action="clear-trades">Delete all trades</button></div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+function drawEquity(){
+  var el=document.getElementById('equity');if(!el)return;
+  var t=state.trading,ev=[];
+  t.deposits.forEach(function(x){ev.push({d:x.date,eq:num(x.amount),pn:0});});
+  t.withdrawals.forEach(function(x){ev.push({d:x.date,eq:-num(x.amount),pn:0});});
+  t.trades.forEach(function(x){ev.push({d:x.date,t:x.time||'',eq:num(x.pnl),pn:num(x.pnl)});});
+  if(!ev.length){el.innerHTML='<div class="muted">Add deposits and trades to see the equity curve.</div>';return;}
+  ev.sort(function(a,b){var ka=a.d+' '+(a.t||''),kb=b.d+' '+(b.t||'');return ka<kb?-1:(ka>kb?1:0);});
+  var pts=[{d:ev[0].d,e:0,p:0}],e=0,p=0;
+  ev.forEach(function(x){e=r2(e+x.eq);p=r2(p+x.pn);pts.push({d:x.d,e:e,p:p});});
+  var W=700,H=260,L=56,R=12,T=12,B=28;
+  var vals=pts.map(function(x){return x.e;}).concat(pts.map(function(x){return x.p;})).concat([0]);
+  var mn=Math.min.apply(null,vals),mx=Math.max.apply(null,vals);
+  if(mx===mn){mx+=1;mn-=1;}
+  var pad_=(mx-mn)*0.08;mn-=pad_;mx+=pad_;
+  function X(i){return L+(pts.length===1?0:i/(pts.length-1))*(W-L-R);}
+  function Y(v){return T+(1-(v-mn)/(mx-mn))*(H-T-B);}
+  function path(k){return pts.map(function(q,i){return (i?'L':'M')+X(i).toFixed(1)+' '+Y(q[k]).toFixed(1);}).join(' ');}
+  var s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Equity curve">';
+  for(var i=0;i<=4;i++){
+    var v=mn+(mx-mn)*i/4,y=Y(v);
+    s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'" stroke="var(--border)" stroke-width="1"/><text x="'+(L-6)+'" y="'+(y+4)+'" text-anchor="end">£'+Math.round(v)+'</text>';
+  }
+  s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+Y(0)+'" y2="'+Y(0)+'" stroke="var(--muted)" stroke-dasharray="4 3" stroke-width="1"/>';
+  s+='<path d="'+path('p')+'" fill="none" stroke="var(--good)" stroke-width="2" stroke-linejoin="round"/>';
+  s+='<path d="'+path('e')+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/>';
+  if(pts.length<80)pts.forEach(function(q,i){s+='<circle cx="'+X(i)+'" cy="'+Y(q.e)+'" r="2.5" fill="var(--accent)"/>';});
+  s+='<text x="'+L+'" y="'+(H-8)+'">'+fmtDate(pts[0].d)+'</text><text x="'+(W-R)+'" y="'+(H-8)+'" text-anchor="end">'+fmtDate(pts[pts.length-1].d)+'</text></svg>';
+  el.innerHTML=s;
+}
+
+/* Journal */
+var EMOS=['calm','FOMO','revenge','anxious','confident','bored','other'];
+function tkey(x){return (x.date||'')+' '+(x.time||'');}
+function emoOpts(sel){return '<option value="">–</option>'+EMOS.map(function(e){return '<option value="'+e+'"'+(sel===e?' selected':'')+'>'+e+'</option>';}).join('');}
+function setupsList(){var m={};state.trading.trades.forEach(function(t){if(t.setup)m[t.setup]=1;});return Object.keys(m).sort();}
+function jFiltered(){
+  var f=ui.jf;
+  return state.trading.trades.filter(function(x){
+    if(f.from&&x.date<f.from)return false;
+    if(f.to&&x.date>f.to)return false;
+    if(f.inst&&(x.instrument||'').toLowerCase().indexOf(f.inst.toLowerCase())<0)return false;
+    if(f.setup&&(x.setup||'')!==f.setup)return false;
+    if(f.dir&&x.dir!==f.dir)return false;
+    if(f.emo&&x.emoBefore!==f.emo&&x.emoAfter!==f.emo)return false;
+    if(f.plan==='none'&&x.plan)return false;
+    if((f.plan==='yes'||f.plan==='no')&&x.plan!==f.plan)return false;
+    if(f.res==='win'&&!(num(x.pnl)>0))return false;
+    if(f.res==='loss'&&!(num(x.pnl)<0))return false;
+    if(f.q){var hay=[x.instrument,x.setup,x.mistakes,x.lessons,x.note].join(' ').toLowerCase();if(hay.indexOf(f.q.toLowerCase())<0)return false;}
+    return true;
+  });
+}
+function groupStats(list,keyFn){
+  var g={};
+  list.forEach(function(x){var k=keyFn(x);if(k==null)return;var o=g[k]||(g[k]={k:k,n:0,w:0,pnl:0});o.n++;if(num(x.pnl)>0)o.w++;o.pnl=r2(o.pnl+num(x.pnl));});
+  return Object.keys(g).map(function(k){return g[k];}).sort(function(a,b){return b.pnl-a.pnl;});
+}
+function winPct(o){return o.n?pct(o.w/o.n*100,0):'–';}
+function jStatsTable(title,rows,label){
+  if(!rows.length)return '<h3>'+title+'</h3><div class="muted small">No data yet.</div>';
+  var h='<h3>'+title+'</h3><div class="scroll"><table><thead><tr><th>'+label+'</th><th class="n">Trades</th><th class="n">Win rate</th><th class="n">P&L</th><th class="n">Avg</th></tr></thead><tbody>';
+  rows.forEach(function(o){h+='<tr><td>'+esc(o.k)+'</td><td class="n">'+o.n+'</td><td class="n">'+winPct(o)+'</td><td class="n '+cls(o.pnl)+'">'+money(o.pnl,true)+'</td><td class="n '+cls(o.pnl)+'">'+money(o.n?o.pnl/o.n:0,true)+'</td></tr>';});
+  return h+'</tbody></table></div>';
+}
+function shotPrevHtml(){
+  return ui.shot?'<img class="thumb" src="'+ui.shot+'" alt="screenshot" data-action="view-shot-tmp"> <button type="button" class="btn danger sm" data-action="shot-clear">Remove</button>':'<span class="muted small">No screenshot attached</span>';
+}
+function jListHtml(){
+  var list=jFiltered(),n=list.length;
+  var pnl=r2(list.reduce(function(a,x){return a+num(x.pnl);},0));
+  var wins=list.filter(function(x){return num(x.pnl)>0;}).length;
+  var planYes=list.filter(function(x){return x.plan==='yes';}).length,planRec=list.filter(function(x){return x.plan;}).length;
+  var h='<div class="grid g4 mt">';
+  h+=kpi('Entries',n+'','of '+state.trading.trades.length+' total');
+  h+=kpi('P&L (filtered)',money(pnl,true),'',cls(pnl));
+  h+=kpi('Win rate',n?pct(wins/n*100,0):'–',wins+' wins');
+  h+=kpi('Plan followed',planRec?pct(planYes/planRec*100,0):'–',planYes+' of '+planRec+' recorded');
+  h+='</div><div class="grid g2 mt"><div class="card"><h2>Summary stats <span class="muted small">(follows filters)</span></h2>';
+  h+=jStatsTable('By setup / strategy',groupStats(list,function(x){return x.setup||'(no setup)';}),'Setup');
+  h+=jStatsTable('Plan followed vs not',groupStats(list,function(x){return x.plan==='yes'?'Followed plan':(x.plan==='no'?'Did NOT follow plan':'Not recorded');}),'Plan');
+  h+='</div><div class="card"><h2>P&L by emotion</h2>';
+  var eb=groupStats(list,function(x){return x.emoBefore||null;}),ea=groupStats(list,function(x){return x.emoAfter||null;});
+  h+=jStatsTable('Emotion BEFORE the trade',eb,'Emotion');
+  h+=jStatsTable('Emotion AFTER the trade',ea,'Emotion');
+  h+='</div></div>';
+  h+='<div class="card mt"><h2>Entries <span class="muted small">('+n+')</span></h2>';
+  if(!n)h+='<div class="muted">No entries match. Add one with “+ New entry”, or log a quick trade on the Trading tab.</div>';
+  var sorted=list.slice().sort(function(a,b){var ka=tkey(a),kb=tkey(b);return ka<kb?1:(ka>kb?-1:0);});
+  var lim=ui.jAll?sorted.length:Math.min(sorted.length,30);
+  for(var i=0;i<lim;i++){
+    var x=sorted[i];
+    h+='<div class="jentry"><div class="jhead"><div><b>'+fmtDate(x.date)+(x.time?' '+esc(x.time):'')+'</b> · '+esc(x.instrument||'?')+
+       (x.dir?' <span class="badge '+(x.dir==='long'?'good':'bad')+'">'+x.dir+'</span>':'')+'</div>'+
+       '<div><b class="'+cls(num(x.pnl))+'" style="font-size:1.1rem">'+money(x.pnl,true)+'</b> '+
+       '<button class="btn sec sm" data-action="j-edit" data-id="'+x.id+'">Edit</button> <button class="btn danger sm" data-action="j-del" data-id="'+x.id+'">Delete</button></div></div>';
+    var meta=[];
+    if(x.entry!=null&&x.entry!=='')meta.push('Entry '+esc(x.entry));
+    if(x.exit!=null&&x.exit!=='')meta.push('Exit '+esc(x.exit));
+    if(x.size!=null&&x.size!=='')meta.push('Size '+esc(x.size));
+    if(x.setup)meta.push('Setup: '+esc(x.setup));
+    if(x.emoBefore||x.emoAfter)meta.push('Feeling: '+esc(x.emoBefore||'?')+' → '+esc(x.emoAfter||'?'));
+    if(meta.length)h+='<div class="jmeta">'+meta.map(function(m){return '<span>'+m+'</span>';}).join('')+
+       (x.plan?'<span class="badge '+(x.plan==='yes'?'good':'bad')+'">'+(x.plan==='yes'?'followed plan':'broke plan')+'</span>':'')+'</div>';
+    else if(x.plan)h+='<div class="jmeta"><span class="badge '+(x.plan==='yes'?'good':'bad')+'">'+(x.plan==='yes'?'followed plan':'broke plan')+'</span></div>';
+    if(x.mistakes)h+='<div class="jtxt"><b>Mistakes:</b> '+esc(x.mistakes)+'</div>';
+    if(x.lessons)h+='<div class="jtxt"><b>Lessons:</b> '+esc(x.lessons)+'</div>';
+    if(x.note)h+='<div class="jtxt"><b>Notes:</b> '+esc(x.note)+'</div>';
+    if(x.shot)h+='<img class="thumb" src="'+x.shot+'" alt="trade screenshot" data-action="view-shot" data-id="'+x.id+'">';
+    h+='</div>';
+  }
+  if(sorted.length>lim)h+='<div class="form"><button class="btn sec sm" data-action="j-all">Show all '+sorted.length+' entries</button></div>';
+  return h+'</div>';
+}
+function weekReviewHtml(){
+  var ws=addDays(weekStart(new Date()),-7*ui.wk),we=addDays(ws,6),key=ymd(ws),a=key,b=ymd(we);
+  var rv=state.weeklyReviews[key]||{text:''};
+  var list=state.trading.trades.filter(function(x){return x.date>=a&&x.date<=b;});
+  var pnl=r2(list.reduce(function(s2,x){return s2+num(x.pnl);},0)),w=list.filter(function(x){return num(x.pnl)>0;}).length;
+  var pr=list.filter(function(x){return x.plan;}).length,py=list.filter(function(x){return x.plan==='yes';}).length;
+  var h='<div class="card mt"><h2>📝 Weekly review</h2>';
+  h+='<div class="form"><button class="btn sec sm" data-action="wk-prev">← Prev</button><b>'+fmtDate(a)+' – '+fmtDate(b)+(ui.wk===0?' (this week)':'')+'</b><button class="btn sec sm" data-action="wk-next"'+(ui.wk===0?' disabled':'')+'>Next →</button></div>';
+  h+='<div class="rowline"><span>Trades · win rate · P&L</span><b>'+list.length+' · '+(list.length?pct(w/list.length*100,0):'–')+' · <span class="'+cls(pnl)+'">'+money(pnl,true)+'</span></b></div>';
+  h+='<div class="rowline"><span>Plan followed</span><b>'+(pr?py+' of '+pr+' ('+pct(py/pr*100,0)+')':'–')+'</b></div>';
+  h+='<div class="small muted mt">Prompts: What went well? · What was my biggest mistake and what did it cost? · Which rules did I break, and why? · Which emotions (FOMO / revenge) drove trades? · One thing to improve next week · One rule I commit to.</div>';
+  h+='<div class="form"><label class="full">Review notes (auto-saved)<textarea id="wkText" data-wk="'+key+'" rows="8" placeholder="Write your weekly review here...">'+esc(rv.text)+'</textarea></label>'+
+     '<button class="btn sec sm" data-action="wk-template">Insert prompt template</button><span class="small muted" id="wkSaved">'+(rv.saved?'Saved '+new Date(rv.saved).toLocaleString('en-GB'):'')+'</span></div>';
+  var keys=Object.keys(state.weeklyReviews).filter(function(k){return state.weeklyReviews[k]&&state.weeklyReviews[k].text&&state.weeklyReviews[k].text.trim()&&k!==key;}).sort().reverse();
+  if(keys.length){
+    h+='<h3>Past reviews</h3>';
+    keys.slice(0,12).forEach(function(k){h+='<details class="jentry"><summary><b>Week of '+fmtDate(k)+'</b></summary><div class="jtxt">'+esc(state.weeklyReviews[k].text)+'</div></details>';});
+  }
+  return h+'</div>';
+}
+function vJournal(){
+  var f=ui.jf,setups=setupsList();
+  var h='<div class="card"><div class="jhead"><h2 style="margin:0">📓 Trading journal</h2><button class="btn" data-action="j-new">+ New entry</button></div>';
+  h+='<div class="small muted mt">Journal entries <b>are</b> your trade log: every entry counts toward Trading net P&L, win rate and the equity curve. Enter P&L only once, here or on the Trading tab.</div></div>';
+  if(ui.jOpen){
+    var e=ui.editId?state.trading.trades.filter(function(x){return x.id===ui.editId;})[0]:null;
+    e=e||{date:todayStr(),time:new Date().toTimeString().slice(0,5)};
+    var v=function(k){return e[k]==null?'':esc(e[k]);};
+    h+='<div class="card mt" id="jform"><h2>'+(ui.editId?'Edit entry':'New entry')+'</h2><form class="form" data-form="journal">'+
+      '<label>Date<input type="date" name="date" value="'+v('date')+'" required></label>'+
+      '<label>Time<input type="time" name="time" value="'+v('time')+'"></label>'+
+      '<label>Instrument<input type="text" name="instrument" value="'+v('instrument')+'" placeholder="GBPUSD" required style="width:120px"></label>'+
+      '<label>Direction<select name="dir"><option value="">–</option><option value="long"'+(e.dir==='long'?' selected':'')+'>Long</option><option value="short"'+(e.dir==='short'?' selected':'')+'>Short</option></select></label>'+
+      '<label>Entry<input type="number" name="entry" step="any" value="'+v('entry')+'"></label>'+
+      '<label>Exit<input type="number" name="exit" step="any" value="'+v('exit')+'"></label>'+
+      '<label>Size (lots)<input type="number" name="size" step="any" value="'+v('size')+'"></label>'+
+      '<label>P&L (£)<input type="number" name="pnl" step="0.01" value="'+v('pnl')+'" required></label>'+
+      '<label>Setup / strategy<input type="text" name="setup" list="setupList" value="'+v('setup')+'" placeholder="e.g. breakout" style="width:170px"></label>'+
+      '<datalist id="setupList">'+setups.map(function(x){return '<option value="'+esc(x)+'">';}).join('')+'</datalist>'+
+      '<label>Emotion before<select name="emoBefore">'+emoOpts(e.emoBefore)+'</select></label>'+
+      '<label>Emotion after<select name="emoAfter">'+emoOpts(e.emoAfter)+'</select></label>'+
+      '<label>Followed my plan?<select name="plan"><option value="">–</option><option value="yes"'+(e.plan==='yes'?' selected':'')+'>Yes</option><option value="no"'+(e.plan==='no'?' selected':'')+'>No</option></select></label>'+
+      '<label class="half">Mistakes<textarea name="mistakes" rows="2">'+v('mistakes')+'</textarea></label>'+
+      '<label class="half">Lessons<textarea name="lessons" rows="2">'+v('lessons')+'</textarea></label>'+
+      '<label class="full">Notes<textarea name="note" rows="2">'+v('note')+'</textarea></label>'+
+      '<div class="full" style="flex:1 1 100%"><button type="button" class="btn sec sm" data-action="shot-pick">📷 Attach screenshot</button> <span id="shotPrev">'+shotPrevHtml()+'</span><div class="small muted">Images are resized (max 640px, JPEG) before being stored in the browser.</div></div>'+
+      '<button class="btn">'+(ui.editId?'Save changes':'Add entry')+'</button><button type="button" class="btn sec" data-action="j-cancel">Cancel</button></form></div>';
+  }
+  h+='<div class="card mt"><h2>Filters</h2><div class="form">'+
+    '<label>From<input type="date" data-jf="from" value="'+esc(f.from||'')+'"></label><label>To<input type="date" data-jf="to" value="'+esc(f.to||'')+'"></label>'+
+    '<label>Instrument<input type="text" data-jf="inst" value="'+esc(f.inst||'')+'" style="width:110px"></label>'+
+    '<label>Setup<select data-jf="setup"><option value="">All</option>'+setups.map(function(x){return '<option'+(f.setup===x?' selected':'')+'>'+esc(x)+'</option>';}).join('')+'</select></label>'+
+    '<label>Direction<select data-jf="dir"><option value="">All</option><option value="long"'+(f.dir==='long'?' selected':'')+'>Long</option><option value="short"'+(f.dir==='short'?' selected':'')+'>Short</option></select></label>'+
+    '<label>Emotion (before/after)<select data-jf="emo"><option value="">All</option>'+EMOS.map(function(x){return '<option'+(f.emo===x?' selected':'')+'>'+x+'</option>';}).join('')+'</select></label>'+
+    '<label>Plan<select data-jf="plan"><option value="">All</option><option value="yes"'+(f.plan==='yes'?' selected':'')+'>Followed</option><option value="no"'+(f.plan==='no'?' selected':'')+'>Not followed</option><option value="none"'+(f.plan==='none'?' selected':'')+'>Not recorded</option></select></label>'+
+    '<label>Result<select data-jf="res"><option value="">All</option><option value="win"'+(f.res==='win'?' selected':'')+'>Wins</option><option value="loss"'+(f.res==='loss'?' selected':'')+'>Losses</option></select></label>'+
+    '<label>Search<input type="text" data-jf="q" value="'+esc(f.q||'')+'" placeholder="notes, mistakes..." style="width:150px"></label>'+
+    '<button class="btn sec sm" data-action="jf-reset">Reset</button></div></div>';
+  h+='<div id="jlist">'+jListHtml()+'</div>';
+  h+=weekReviewHtml();
+  if(ui.shotView)h+='<div class="overlay" data-action="close-shot"><img src="'+ui.shotView+'" alt="screenshot"></div>';
+  return h;
+}
+function resizeImage(file,cb){
+  var fr=new FileReader();
+  fr.onload=function(){
+    var img=new Image();
+    img.onload=function(){
+      var max=640,sc=Math.min(1,max/Math.max(img.width,img.height));
+      var c=document.createElement('canvas');c.width=Math.max(1,Math.round(img.width*sc));c.height=Math.max(1,Math.round(img.height*sc));
+      var ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(img,0,0,c.width,c.height);
+      cb(c.toDataURL('image/jpeg',0.6));
+    };
+    img.onerror=function(){toast('Could not read that image');};
+    img.src=fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+function numOrNull(v){return (v==null||String(v).trim()==='')?null:num(v);}
+
+/* Settings */
+function vSettings(){
+  var s=state.settings;
+  var h='<div class="card"><h2>🔒 Privacy</h2>'+alertBox('good','<b>No bank login details are stored.</b> Everything stays in this browser (localStorage) on this device - nothing is sent anywhere. Use Export JSON regularly to back up, because clearing browser data will erase it.')+'</div>';
+  h+='<div class="grid g2 mt"><div class="card"><h2>General</h2><div class="form">'+
+     '<label>Payday (day of month)<input type="number" min="1" max="31" step="1" data-path="settings.paydayDay" value="'+esc(s.paydayDay)+'"></label>'+
+     '<label>Theme<select data-path="settings.theme" data-type="text">'+['auto','light','dark'].map(function(o){return '<option'+(s.theme===o?' selected':'')+'>'+o+'</option>';}).join('')+'</select></label></div>'+
+     '<div class="small muted">Currency is fixed to GBP (£). If today is after payday, the payoff schedule starts next month. Income, budget, allowance and debt payment are edited on the Budget and Debts tabs.</div></div>';
+  h+='<div class="card"><h2>Backup</h2><div class="form"><button class="btn" data-action="export">⬇ Export JSON</button><button class="btn sec" data-action="import">⬆ Import JSON</button></div>'+
+     '<div class="small muted">Import replaces all current data with the file’s contents.</div>'+
+     '<h3>Danger zone</h3><div class="form"><button class="btn danger" data-action="reset">Reset to defaults</button></div></div></div>';
+  return h;
+}
+
+/* ---------- events ---------- */
+function setPath(path,val){
+  var parts=path.split('.'),o=state;
+  for(var i=0;i<parts.length-1;i++)o=o[parts[i]];
+  o[parts[parts.length-1]]=val;
+}
+document.addEventListener('change',function(ev){
+  var el=ev.target;
+  if(el.id==='importFile'||el.id==='csvFile'||el.id==='csvFees'||el.id==='shotFile')return;
+  if(el.dataset.path){
+    var v=el.dataset.type==='text'?el.value:num(el.value);
+    setPath(el.dataset.path,v);save();render();return;
+  }
+  if(el.dataset.list){
+    var item=state[el.dataset.list].filter(function(x){return x.id===el.dataset.id;})[0];if(!item)return;
+    var f=el.dataset.field,t=el.dataset.type;
+    if(t==='num')item[f]=num(el.value);
+    else if(t==='null')item[f]=el.value===''?null:num(el.value);
+    else item[f]=el.value;
+    save();render();return;
+  }
+  if(el.dataset.ui){ui[el.dataset.ui]=el.value||ui[el.dataset.ui];render();return;}
+  if(el.dataset.check){
+    var mk=todayStr().slice(0,7);
+    state.checklist[mk]=state.checklist[mk]||{};state.checklist[mk][el.dataset.check]=el.checked;save();render();
+  }
+});
+document.addEventListener('input',function(ev){
+  var el=ev.target;
+  if(el.dataset&&el.dataset.jf){
+    if(el.value)ui.jf[el.dataset.jf]=el.value;else delete ui.jf[el.dataset.jf];
+    ui.jAll=false;var jl=document.getElementById('jlist');if(jl)jl.innerHTML=jListHtml();return;
+  }
+  if(el.dataset&&el.dataset.wk){
+    state.weeklyReviews[el.dataset.wk]={text:el.value,saved:new Date().toISOString()};save();
+    var sv=document.getElementById('wkSaved');if(sv)sv.textContent='Saved '+new Date().toLocaleString('en-GB');
+  }
+});
+document.getElementById('shotFile').addEventListener('change',function(e){
+  var f=e.target.files[0];if(!f)return;
+  resizeImage(f,function(url){ui.shot=url;var sp=document.getElementById('shotPrev');if(sp)sp.innerHTML=shotPrevHtml();});
+  e.target.value='';
+});
+document.addEventListener('submit',function(ev){
+  var f=ev.target;if(!f.dataset.form)return;ev.preventDefault();
+  var fd=new FormData(f),g=function(k){return fd.get(k);};
+  var kind=f.dataset.form;
+  if(kind==='expense'){
+    var a=num(g('amount'));if(!(a>0))return;
+    state.expenses.push({id:uid(),date:g('date'),cat:g('cat'),amount:a,note:g('note')||''});
+  }else if(kind==='payment'){
+    var d=state.debts.filter(function(x){return x.id===g('debt');})[0];var amt=num(g('amount'));
+    if(!d||!(amt>0))return;
+    var applied=Math.min(amt,num(d.balance));
+    if(applied<amt&&!confirm('That is more than the '+money(d.balance)+' balance. Log only '+money(applied)+'?'))return;
+    if(applied<=0){toast('That debt is already at £0');return;}
+    d.balance=r2(num(d.balance)-applied);
+    state.payments.push({id:uid(),date:g('date'),debtId:d.id,debtName:d.name,amount:applied,note:g('note')||''});
+  }else if(kind==='trade'){
+    state.trading.trades.push({id:uid(),date:g('date'),instrument:(g('instrument')||'').trim(),pnl:num(g('pnl')),note:g('note')||''});
+    var st=tradingStats();var br=st.breaches.filter(function(b){return b.date===g('date');})[0];
+    if(br)toast('⚠ Daily loss limit breached on '+fmtDate(br.date)+': '+money(br.pnl));
+  }else if(kind==='journal'){
+    var rec={date:g('date'),time:g('time')||'',instrument:(g('instrument')||'').trim(),dir:g('dir')||'',entry:numOrNull(g('entry')),exit:numOrNull(g('exit')),size:numOrNull(g('size')),
+      pnl:num(g('pnl')),setup:(g('setup')||'').trim(),emoBefore:g('emoBefore')||'',emoAfter:g('emoAfter')||'',plan:g('plan')||'',
+      mistakes:g('mistakes')||'',lessons:g('lessons')||'',note:g('note')||''};
+    var ex=ui.editId?state.trading.trades.filter(function(x){return x.id===ui.editId;})[0]:null;
+    if(ex)Object.assign(ex,rec);else{rec.id=uid();state.trading.trades.push(rec);ex=rec;}
+    if(ui.shot)ex.shot=ui.shot;else delete ex.shot;
+    ui.jOpen=false;ui.editId=null;ui.shot='';
+    var br2=tradingStats().breaches.filter(function(b){return b.date===rec.date;})[0];
+    if(br2)toast('⚠ Daily loss limit breached on '+fmtDate(br2.date)+': '+money(br2.pnl));
+  }else if(kind==='cash'){
+    var amt2=num(g('amount'));if(!(amt2>0))return;
+    if(g('kind')==='deposits'){
+      var warn=[];
+      if(totalDebt()>0)warn.push('You still owe '+money(totalDebt())+' in debt.');
+      var cap=num(state.trading.riskCap);var net=tradingStats().net+amt2;
+      if(cap<=0)warn.push('Your trading capital cap is £0 (not set).');else if(net>cap)warn.push('This takes net deposits to '+money(net)+', above your '+money(cap)+' cap.');
+      if(warn.length&&!confirm('Trading risk rule warning:\n\n- '+warn.join('\n- ')+'\n\nAdd this deposit anyway?'))return;
+    }
+    state.trading[g('kind')].push({id:uid(),date:g('date'),amount:amt2,note:g('note')||''});
+  }
+  save();render();
+});
+document.addEventListener('click',function(ev){
+  var tabBtn=ev.target.closest('[data-tab]');
+  if(tabBtn){ui.tab=tabBtn.dataset.tab;render();window.scrollTo(0,0);return;}
+  var b=ev.target.closest('[data-action]');if(!b)return;
+  var a=b.dataset.action,id=b.dataset.id;
+  function rm(list){state[list]=state[list].filter(function(x){return x.id!==id;});}
+  switch(a){
+    case 'paste-import':var pt=document.getElementById('pasteJson');if(pt&&pt.value.trim())importJSON(pt.value);else toast('Paste your JSON first');return;
+    case 'start-blank':save();render();return;
+    case 'export':doExport();return;
+    case 'import':document.getElementById('importFile').click();return;
+    case 'csv':document.getElementById('csvFile').click();return;
+    case 'add-essential':state.essentials.push({id:uid(),name:'New item',amount:0});break;
+    case 'del-essential':rm('essentials');break;
+    case 'del-expense':rm('expenses');break;
+    case 'add-debt':state.debts.push({id:uid(),name:'New debt',balance:0,startBalance:0,monthlyInterest:null,min:null,note:''});break;
+    case 'del-debt':if(!confirm('Remove this debt?'))return;rm('debts');break;
+    case 'del-payment':
+      var p=state.payments.filter(function(x){return x.id===id;})[0];
+      if(p){var d=state.debts.filter(function(x){return x.id===p.debtId;})[0];if(d)d.balance=r2(num(d.balance)+num(p.amount));}
+      rm('payments');break;
+    case 'j-new':ui.jOpen=true;ui.editId=null;ui.shot='';ui.tab='journal';render();window.scrollTo(0,0);return;
+    case 'j-edit':var te=state.trading.trades.filter(function(x){return x.id===id;})[0];if(!te)return;ui.jOpen=true;ui.editId=id;ui.shot=te.shot||'';ui.tab='journal';render();window.scrollTo(0,0);return;
+    case 'j-cancel':ui.jOpen=false;ui.editId=null;ui.shot='';render();return;
+    case 'j-del':if(!confirm('Delete this journal entry? It will also be removed from the Trading P&L.'))return;state.trading.trades=state.trading.trades.filter(function(x){return x.id!==id;});if(ui.editId===id){ui.jOpen=false;ui.editId=null;}break;
+    case 'j-all':ui.jAll=true;render();return;
+    case 'jf-reset':ui.jf={};render();return;
+    case 'shot-pick':document.getElementById('shotFile').click();return;
+    case 'shot-clear':ui.shot='';var sp=document.getElementById('shotPrev');if(sp)sp.innerHTML=shotPrevHtml();return;
+    case 'view-shot':var vt=state.trading.trades.filter(function(x){return x.id===id;})[0];ui.shotView=vt&&vt.shot;render();return;
+    case 'view-shot-tmp':ui.shotView=ui.shot;render();return;
+    case 'close-shot':ui.shotView=null;render();return;
+    case 'wk-prev':ui.wk++;render();return;
+    case 'wk-next':if(ui.wk>0)ui.wk--;render();return;
+    case 'wk-template':
+      var ta=document.getElementById('wkText');if(!ta)return;
+      if(ta.value.trim()&&!confirm('Append the prompt template to your current notes?'))return;
+      ta.value=(ta.value.trim()?ta.value+'\n\n':'')+'What went well:\n\nBiggest mistake (and cost):\n\nRules I broke / why:\n\nEmotions that drove trades:\n\nOne thing to improve next week:\n\nMy rule for next week:\n';
+      ta.dispatchEvent(new Event('input',{bubbles:true}));return;
+    case 'del-trade':state.trading.trades=state.trading.trades.filter(function(x){return x.id!==id;});break;
+    case 'del-cash':var k=b.dataset.kind;state.trading[k]=state.trading[k].filter(function(x){return x.id!==id;});break;
+    case 'clear-trades':if(!confirm('Delete ALL logged trades?'))return;state.trading.trades=[];break;
+    case 'show-sched':ui.showAllSched=true;break;
+    case 'show-trades':ui.showAllTrades=true;break;
+    case 'use-calc':state.trading.balance=tradingStats().calc;break;
+    case 'reset':if(!confirm('Reset ALL data to the defaults? This cannot be undone (export first!).'))return;state=defaults();break;
+    default:return;
+  }
+  save();render();
+});
+
+/* ---------- export / import ---------- */
+function doExport(){
+  var blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='finance-dashboard-'+todayStr()+'.json';document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+  toast('Exported backup');
+}
+function importJSON(text){
+  var o;try{o=JSON.parse(text);}catch(e){toast('Invalid JSON file');return;}
+  if(!o||typeof o!=='object'||!o.settings||!Array.isArray(o.debts)){toast('Not a dashboard backup file');return;}
+  if(!isFirstRun()&&!confirm('Replace all current data with this backup?'))return;
+  state=merge(defaults(),o);save();render();toast('Imported backup');
+}
+function readFileText(file,cb){
+  var fr=new FileReader();
+  fr.onload=function(){
+    var buf=new Uint8Array(fr.result),enc='utf-8';
+    if(buf[0]===0xFF&&buf[1]===0xFE)enc='utf-16le';else if(buf[0]===0xFE&&buf[1]===0xFF)enc='utf-16be';
+    cb(new TextDecoder(enc).decode(buf).replace(/^\uFEFF/,''));
+  };
+  fr.readAsArrayBuffer(file);
+}
+document.getElementById('importFile').addEventListener('change',function(e){
+  var f=e.target.files[0];if(!f)return;readFileText(f,importJSON);e.target.value='';
+});
+document.getElementById('csvFile').addEventListener('change',function(e){
+  var f=e.target.files[0];if(!f)return;
+  readFileText(f,function(txt){var r=importMT5(txt,document.getElementById('csvFees').checked);toast(r.msg);if(r.added)render();});
+  e.target.value='';
+});
+
+/* ---------- MT5 CSV ---------- */
+function parseCSV(text){
+  var first=text.split(/\r?\n/).filter(function(l){return l.trim();}).slice(0,15).join('\n');
+  var best=',',bc=-1;[',',';','\t'].forEach(function(d){var c=first.split(d).length;if(c>bc){bc=c;best=d;}});
+  var rows=[],row=[],cur='',q=false;
+  for(var i=0;i<text.length;i++){
+    var c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}
+    else if(c==='"')q=true;
+    else if(c===best){row.push(cur);cur='';}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cur);cur='';if(row.some(function(x){return x.trim();}))rows.push(row);row=[];}
+    else cur+=c;
+  }
+  row.push(cur);if(row.some(function(x){return x.trim();}))rows.push(row);
+  return {rows:rows,delim:best};
+}
+function parseNum(s,delim){
+  s=String(s==null?'':s).replace(/[\s\u00a0£$€]/g,'');if(!s)return NaN;
+  if(s.indexOf(',')>=0&&s.indexOf('.')<0&&(delim===';'||/,\d{1,2}$/.test(s)&&!/,\d{3}/.test(s)))s=s.replace(',','.');
+  else s=s.replace(/,/g,'');
+  return parseFloat(s);
+}
+function parseDateStr(s){
+  s=String(s||'');var m=/(\d{4})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/.exec(s);
+  if(m)return m[1]+'-'+pad(+m[2])+'-'+pad(+m[3]);
+  m=/(\d{1,2})[.\-\/](\d{1,2})[.\-\/](\d{4})/.exec(s);
+  if(m)return m[3]+'-'+pad(+m[2])+'-'+pad(+m[1]);
+  return null;
+}
+function importMT5(text,fees){
+  var p=parseCSV(text),rows=p.rows,hi=-1,cols={};
+  for(var i=0;i<Math.min(rows.length,60);i++){
+    var h=rows[i].map(function(x){return x.trim().toLowerCase();});
+    var pr=h.indexOf('profit'); if(pr<0)pr=h.findIndex(function(x){return /profit|p\/l|p&l|pnl/.test(x);});
+    var sy=h.findIndex(function(x){return x==='symbol'||x==='instrument'||x==='item';});
+    var tm=-1;h.forEach(function(x,j){if(/^(time|date|open time|close time|time\s*\(.*\)|date\/time)$/.test(x)||/time|date/.test(x)&&tm<0)tm=j;});
+    // prefer the LAST plain "time" column (close time in positions reports)
+    var tms=[];h.forEach(function(x,j){if(/time|date/.test(x))tms.push(j);});
+    if(tms.length)tm=tms[tms.length-1];
+    if(pr>=0&&sy>=0&&tm>=0){
+      hi=i;cols={profit:pr,symbol:sy,time:tm,
+        comm:h.findIndex(function(x){return x==='commission'||x==='fee';}),
+        swap:h.indexOf('swap'),
+        type:h.indexOf('type'),comment:h.findIndex(function(x){return x==='comment';})};
+      break;
+    }
+  }
+  if(hi<0)return {added:0,msg:'Could not find Time/Date, Symbol and Profit columns in that file'};
+  var added=0,skipped=0,dup=0;var seen={};
+  state.trading.trades.forEach(function(t){if(t.src)seen[t.src]=1;});
+  for(var r=hi+1;r<rows.length;r++){
+    var row=rows[r];var sym=(row[cols.symbol]||'').trim();
+    var type=cols.type>=0?(row[cols.type]||'').trim().toLowerCase():'';
+    var date=parseDateStr(row[cols.time]);var pnl=parseNum(row[cols.profit],p.delim);
+    if(!sym||!date||!isFinite(pnl)||type==='balance'||type==='credit'){skipped++;continue;}
+    if(fees){
+      if(cols.comm>=0){var c=parseNum(row[cols.comm],p.delim);if(isFinite(c))pnl+=c;}
+      if(cols.swap>=0){var sw=parseNum(row[cols.swap],p.delim);if(isFinite(sw))pnl+=sw;}
+    }
+    pnl=r2(pnl);
+    var src=[row[cols.time],sym,row[cols.profit],type,row[cols.comm]||'',row[cols.swap]||''].join('|');
+    if(seen[src]){dup++;continue;}
+    seen[src]=1;
+    state.trading.trades.push({id:uid(),date:date,instrument:sym,pnl:pnl,note:'MT5 import'+(type?' ('+type+')':''),src:src});
+    added++;
+  }
+  save();
+  return {added:added,msg:'Imported '+added+' trades'+(dup?', '+dup+' duplicates skipped':'')+(skipped?', '+skipped+' non-trade rows skipped':'')};
+}
+
+/* test hooks */
+window.__app={jFiltered:jFiltered,groupStats:groupStats,get state(){return state;},simulate:simulate,importMT5:importMT5,tradingStats:tradingStats,render:render,KEY:KEY,
+  setTab:function(t){ui.tab=t;render();},firstPayMonth:firstPayMonth};
+render();
+if('serviceWorker' in navigator&&(location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
+  window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(e){console.warn('SW registration failed',e);});});
+}
+})();
+</script>
+</body>
+</html>
